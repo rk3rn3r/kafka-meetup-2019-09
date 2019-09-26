@@ -1,0 +1,20 @@
+{
+  "name": "tracking-http-sink-meetup201909",
+  "config": {
+    "topics": "tracking",
+    "tasks.max": "1",
+    "connector.class": "io.confluent.connect.http.HttpSinkConnector",
+    "http.api.url": "http://172.20.0.1:8080",
+    "auth.type": "BASIC",
+    "connection.user": "FhDv5sp19A8ml",
+    "batch.max.size": "5",
+    "batch.prefix": "{\"batches\": [",
+    "batch.suffix": "]}",
+    "batch.seperator": ",",
+    "headers": "Content-Type: application/json",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "confluent.topic.bootstrap.servers": "meetup201909-broker01:29092,meetup201909-broker02:29092,meetup201909-broker03:29092",
+    "confluent.topic.replication.factor": "2"
+  }
+}

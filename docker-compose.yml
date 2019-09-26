@@ -1,0 +1,138 @@
+version: '3.6'
+
+services:
+  meetup201909-zookeeper01:
+    image: confluentinc/cp-zookeeper:${APP_CONFLUENT_PLATFORM_VERSION}
+    container_name: meetup201909-zookeeper01
+    hostname: meetup201909-zookeeper01
+    env_file:
+      - .env
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+    networks:
+      - meetup201909
+
+  meetup201909-zookeeper02:
+    image: confluentinc/cp-zookeeper:${APP_CONFLUENT_PLATFORM_VERSION}
+    container_name: meetup201909-zookeeper02
+    hostname: meetup201909-zookeeper02
+    env_file:
+      - .env
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+    networks:
+      - meetup201909
+
+  meetup201909-zookeeper03:
+    image: confluentinc/cp-zookeeper:${APP_CONFLUENT_PLATFORM_VERSION}
+    container_name: meetup201909-zookeeper03
+    hostname: meetup201909-zookeeper02
+    env_file:
+      - .env
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+    networks:
+      - meetup201909
+
+  meetup201909-broker01:
+    image: confluentinc/cp-kafka:${APP_CONFLUENT_PLATFORM_VERSION}
+    container_name: meetup201909-broker01
+    hostname: meetup201909-broker01
+    depends_on:
+      - meetup201909-zookeeper01
+      - meetup201909-zookeeper02
+      - meetup201909-zookeeper03
+    env_file:
+      - .env
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://meetup201909-broker01:29092,PLAINTEXT_HOST://localhost:9092
+    networks:
+      - meetup201909
+
+  meetup201909-broker02:
+    image: confluentinc/cp-kafka:${APP_CONFLUENT_PLATFORM_VERSION}
+    container_name: meetup201909-broker02
+    hostname: meetup201909-broker02
+    depends_on:
+      - meetup201909-zookeeper01
+      - meetup201909-zookeeper02
+      - meetup201909-zookeeper03
+    env_file:
+      - .env
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://meetup201909-broker02:29092,PLAINTEXT_HOST://localhost:9093
+    networks:
+      - meetup201909
+
+  meetup201909-broker03:
+    image: confluentinc/cp-kafka:${APP_CONFLUENT_PLATFORM_VERSION}
+    container_name: meetup201909-broker03
+    hostname: meetup201909-broker03
+    depends_on:
+      - meetup201909-zookeeper01
+      - meetup201909-zookeeper02
+      - meetup201909-zookeeper03
+    env_file:
+      - .env
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://meetup201909-broker03:29092,PLAINTEXT_HOST://localhost:9094
+    networks:
+      - meetup201909
+
+  meetup201909-restproxy:
+    image: confluentinc/cp-kafka-rest:${APP_CONFLUENT_PLATFORM_VERSION}
+    container_name: meetup201909-restproxy
+    depends_on:
+      - meetup201909-broker01
+      - meetup201909-broker02
+      - meetup201909-broker03
+    hostname: meetup201909-restproxy
+    env_file:
+      - .env
+    environment:
+      KAFKA_REST_HOST_NAME: meetup201909-restproxy
+      KAFKA_REST_BOOTSTRAP_SERVERS: ${BOOTSTRAP_SERVERS}
+      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+    networks:
+      - meetup201909
+
+  meetup201909-connect:
+    build:
+      context: http_sink # using a custom image
+      args:
+        - APP_CONFLUENT_PLATFORM_VERSION
+    container_name: meetup201909-connect
+    hostname: meetup201909-connect
+    depends_on:
+      - meetup201909-broker01
+      - meetup201909-broker02
+      - meetup201909-broker03
+    env_file:
+      - .env
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: ${BOOTSTRAP_SERVERS}
+      CONNECT_REST_ADVERTISED_HOST_NAME: meetup201909-connect
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: meetup201909-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: meetup201909-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 2
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_OFFSET_STORAGE_TOPIC: meetup201909-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 2
+      CONNECT_STATUS_STORAGE_TOPIC: meetup201909-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 2
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR,io.confluent.connect.http=ERROR
+    networks:
+      - meetup201909
+
+networks:
+  meetup201909:
+    external: true

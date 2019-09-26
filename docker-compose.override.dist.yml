@@ -1,0 +1,19 @@
+version: '3.6'
+
+services:
+  meetup201909-restproxy:
+    ports:
+      - 58082:8082
+    environment:
+      KAFKA_REST_ACCESS_CONTROL_ALLOW_ORIGIN: '*'
+      KAFKA_REST_ACCESS_CONTROL_ALLOW_HEADERS: '*'
+
+  meetup201909-connect:
+    ports:
+      - 28083:8083
+    volumes:
+      - $PWD/config:/tmp/kafka-cli-config
+      - $PWD/scripts:/tmp/kafka-scripts
+    environment:
+      CONNECT_GROUP_ID: meetup201909-connect-group-demotracking
+      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR,io.confluent.connect.http=TRACE
